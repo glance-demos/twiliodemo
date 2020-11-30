@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Twilio Flex Web Chat</title>
+    <script id="glance-cobrowse" type="text/javascript" src="https://www.glancecdn.net/cobrowse/CobrowseJS.ashx?group=21316&site=production" data-groupid=21316 data-site="production" charset="UTF-8" data-presence=api></script>
+    <script src="https://assets.flex.twilio.com/releases/flex-webchat-ui/2.6.0/twilio-flex-webchat.min.js" integrity="sha512-E1OX3Cyq3KaDo4WM6fITGRv2eiGQbK40AJxNdsvC6BRxkUGp7f4RchZeOAVXHTTA3+4KjSeZDJB1cFpikR5EVw==" crossorigin></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+  </head>
+  <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+    <script>
+      const appConfig = {
+        accountSid: "AC82e1835ba7c92303d0b7304a17720372",
+        flexFlowSid: "FOb959dc1b046c910b4b1e8f96fa62a30d",
+        context: {
+          friendlyName: "YOUR_FIRENDLY_NAME",
+        },
+        startEngagementOnInit: true
+      };
+      let firstMessage = true;
+      Twilio.FlexWebChat.createWebChat(appConfig)
+        .then(webchat => {
+          const {manager} = webchat;
+          Twilio.FlexWebChat.Actions.on("afterSendMessage", () => {
+            if (firstMessage) {
+              const {channelSid} = manager.store.getState().flex.session;
+              manager.chatClient.getChannelBySid(channelSid)
+                .then(channel => {
+                  console.log(channel.sid);
+                  let visitor = new GLANCE.Presence.Visitor({
+                    groupid: document.getElementById("glance-cobrowse").getAttribute("data-groupid"),
+                    visitorid: channel.sid
+                  });
+                  visitor.onerror = function(e) {
+                    console.log("presence error:", e);
+                  };
+                  visitor.presence({
+                    data: {
+                      mydata: "abc",
+                      myotherdata: 99999
+                    },
+                    onsuccess: function() {
+                      console.log("presence success");
+                    }
+                  });
+                  visitor.onsignal = function(msg) {
+                    console.log("received signal:", msg);
+                  };
+                  visitor.connect();
+                });
+                 firstMessage = false;
+            }
+         });
+         webchat.init();
+      });
+    </script>
+  </body>
+</html>
